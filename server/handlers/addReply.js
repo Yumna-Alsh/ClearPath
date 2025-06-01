@@ -13,7 +13,6 @@ async function addReply(req, res) {
   try {
     const db = await connectToDB();
 
-    // Get the user
     const user = await db.collection("users").findOne({ accessToken });
 
     if (!user) {

@@ -14,7 +14,6 @@ const editUser = async (req, res) => {
     const db = await connectToDB();
     const users = db.collection("users");
 
-    // Find user by id (assuming id is a UUID string or ObjectId string)
     const user = await users.findOne({ _id: id });
 
     if (!user) {

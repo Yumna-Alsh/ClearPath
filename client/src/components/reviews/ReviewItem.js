@@ -133,7 +133,7 @@ export default function ReviewItem({
           const updatedReplies = [...(r.replies || [])];
           updatedReplies[replyIndex] = {
             ...updatedReplies[replyIndex],
-            ...updatedReply, // Merge to retain username and createdAt
+            ...updatedReply, 
           };
 
           return { ...r, replies: updatedReplies };

@@ -9,9 +9,9 @@ async function contact(req, res) {
   }
 
   const msg = {
-    to: process.env.CONTACT_RECEIVER_EMAIL, // verified sender
-    from: process.env.CONTACT_RECEIVER_EMAIL, // must match verified sender
-    replyTo: email, // the user who submitted the form
+    to: process.env.CONTACT_RECEIVER_EMAIL, 
+    from: process.env.CONTACT_RECEIVER_EMAIL, 
+    replyTo: email,
     subject: `New contact message from ${name}`,
     text: message,
     html: `

@@ -27,13 +27,11 @@ const SignupPage = () => {
 
   return (
     <div className="relative min-h-screen flex flex-col md:flex-row font-['AlfaSlabOne-Regular'] text-[#202254]">
-      {/* Background image (on mobile, appears behind form) */}
       <div
         className="absolute inset-0 md:relative md:w-1/2 bg-cover bg-center z-0"
         style={{ backgroundImage: `url(${SignupImage})` }}
       />
 
-      {/* Form container */}
       <div className="flex justify-center items-center w-full md:w-1/2 z-10 px-4 py-12 bg-white bg-opacity-50 backdrop-blur-md md:bg-transparent md:backdrop-blur-none">
         <div className="w-full max-w-md p-6 rounded-2xl shadow-xl border border-gray-100 bg-white bg-opacity-50 backdrop-blur-md">
           <h2 className="text-3xl text-[#216a78] text-center mb-6">

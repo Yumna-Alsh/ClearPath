@@ -2,7 +2,6 @@ const { connectToDB } = require("../dbClient");
 
 const getLocationReviews = async (req, res) => {
   const locationId = req.params.id;
-  console.log("GET /locations/:id/reviews called with:", locationId); // add this
 
   try {
     const db = await connectToDB();
@@ -10,8 +9,6 @@ const getLocationReviews = async (req, res) => {
       .collection("reviews")
       .find({ locationId })
       .toArray();
-
-    console.log("Found reviews:", reviews); // add this
 
     res.json(reviews);
   } catch (err) {

@@ -32,7 +32,6 @@ export default function Header() {
       <header className="fixed top-0 left-0 w-full bg-white shadow-md z-50 border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 py-3 flex justify-between items-center h-20">
           <Link to="/">
-            {/* Restore larger logo */}
             <img src="/logo.png" alt="Logo" className="h-20" />
           </Link>
 

@@ -6,7 +6,6 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // 🔒 Input validation
     if (!email || !password) {
       return res
         .status(400)
@@ -16,7 +15,6 @@ const login = async (req, res) => {
     const db = await connectToDB();
     const users = db.collection("users");
 
-    // Find user
     const user = await users.findOne({ email });
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(400).json({ message: "Invalid credentials" });
@@ -26,10 +24,10 @@ const login = async (req, res) => {
 
     res.cookie("auth", accessToken, {
       httpOnly: true,
-      secure: false, // set to true in production with HTTPS
+      secure: false, 
       sameSite: "lax",
       path: "/",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000, 
     });
 
     console.log("Setting cookie with token:", accessToken);

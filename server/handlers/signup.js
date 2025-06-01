@@ -36,10 +36,9 @@ const signup = async (req, res) => {
       accessToken,
     });
 
-    // ✅ Set auth cookie (optional login after signup)
     res.cookie("auth", accessToken, {
       httpOnly: true,
-      secure: false, // set to true in production
+      secure: false, 
       sameSite: "strict",
       path: "/",
       maxAge: 7 * 24 * 60 * 60 * 1000,
