@@ -5,9 +5,12 @@ const getLocationReviews = async (req, res) => {
 
   try {
     const db = await connectToDB();
+
+    // Fetch all reviews for the given location ID
     const reviews = await db
       .collection("reviews")
       .find({ locationId })
+      .sort({ createdAt: -1 }) 
       .toArray();
 
     res.json(reviews);

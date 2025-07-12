@@ -1,6 +1,9 @@
 import React from "react";
 
+// BottomDrawer component displays a sliding drawer from the bottom
+// It is used for showing detailed content about a selected item
 export default function BottomDrawer({ selected, onClose, children }) {
+  // Determines if the drawer should be open based on whether an item is selected
   const isOpen = Boolean(selected);
 
   return (
@@ -9,6 +12,7 @@ export default function BottomDrawer({ selected, onClose, children }) {
         ${isOpen ? "translate-y-0" : "translate-y-full"}
       `}
     >
+      {/* Header section with title and close button */}
       <div className="flex justify-between items-center mb-5">
         <h2 className="text-2xl text-[#202254] font-semibold font-[AlfaSlabOne-Regular] truncate">
           {selected?.name}
@@ -21,7 +25,12 @@ export default function BottomDrawer({ selected, onClose, children }) {
           ✕
         </button>
       </div>
-      <div className="text-base text-[#202254] leading-relaxed">{children}</div>
+
+      {/* Content section passed via children */}
+      <div className="text-base text-[#202254] leading-relaxed">
+        {children}
+      </div>
     </div>
   );
 }
+

@@ -1,69 +1,65 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import ForgotImage from "../assets/signup-image.png";
 
-const ForgotPasswordPage = () => {
+export default function ForgotPasswordForm() {
+  // State for email input and message feedback
   const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
 
+  // Handle submit to send reset link request to backend
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const res = await fetch("/forgot-password", {
+
+    const response = await fetch("/forgot-password", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email }),
     });
 
-    if (res.ok) {
-      alert("Password reset link sent. Please check your email.");
+    if (response.ok) {
+      setMessage("If the email exists, you will receive reset instructions.");
+      setEmail("");
     } else {
-      alert("Failed to send reset link. Try again.");
+      setMessage("Oops, something went wrong. Please try again.");
     }
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col md:flex-row font-['AlfaSlabOne-Regular'] text-[#202254]">
-      <div
-        className="absolute inset-0 md:relative md:w-1/2 bg-cover bg-center z-0"
-        style={{ backgroundImage: `url(${ForgotImage})` }}
+    <form
+      onSubmit={handleSubmit}
+      className="max-w-md mx-auto mt-10 p-6 bg-white bg-opacity-50 backdrop-blur-md rounded-2xl shadow-xl border border-gray-100 font-['AlfaSlabOne-Regular'] text-[#202254]"
+    >
+      <label
+        htmlFor="email"
+        className="block mb-2 font-semibold text-[#202254]"
+      >
+        Email:
+      </label>
+
+      <input
+        id="email"
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        required
+        className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-[#216a78] outline-none mb-5"
       />
 
-      <div className="flex justify-center items-center w-full md:w-1/2 z-10 px-4 py-12 bg-white bg-opacity-50 backdrop-blur-md md:bg-transparent md:backdrop-blur-none">
-        <div className="w-full max-w-md p-6 rounded-2xl shadow-xl border border-gray-100 bg-white bg-opacity-50 backdrop-blur-md">
-          <h2 className="text-3xl text-[#216a78] text-center mb-6">
-            Forgot Password
-          </h2>
+      <button
+        type="submit"
+        className="w-full bg-[#202254] hover:bg-[#1b1b44] text-white rounded-lg p-3 font-semibold transition duration-200"
+      >
+        Send Reset Link
+      </button>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <input
-              type="email"
-              required
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#216a78] outline-none text-sm"
-            />
-
-            <button
-              type="submit"
-              className="w-full bg-[#202254] hover:bg-[#1a1a40] text-white font-bold py-3 rounded-xl transition"
-            >
-              Send Reset Link
-            </button>
-
-            <p className="text-sm text-center text-gray-600 mt-4">
-              Back to{" "}
-              <Link
-                to="/login"
-                className="text-[#216a78] font-semibold hover:underline"
-              >
-                Sign In
-              </Link>
-            </p>
-          </form>
-        </div>
-      </div>
-    </div>
+      {message && (
+        <p
+          className={`mt-4 text-center font-semibold ${
+            message.includes("Oops") ? "text-red-600" : "text-[#216a78]"
+          }`}
+        >
+          {message}
+        </p>
+      )}
+    </form>
   );
-};
-
-export default ForgotPasswordPage;
+}

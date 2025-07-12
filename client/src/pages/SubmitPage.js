@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 
 export default function AddLocationForm() {
+  // Form state holding location details
   const [formData, setFormData] = useState({
     name: "",
     address: "",
@@ -12,12 +13,15 @@ export default function AddLocationForm() {
     accessibility: "",
   });
 
+  // Message state for success/error feedback
   const [message, setMessage] = useState("");
 
+  // Update formData on input change
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // Handle form submission, send data to backend
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -35,6 +39,7 @@ export default function AddLocationForm() {
 
       if (res.ok) {
         setMessage(`Location added successfully!`);
+        // Reset form after successful submission
         setFormData({
           name: "",
           address: "",
@@ -65,6 +70,7 @@ export default function AddLocationForm() {
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Render inputs for location details */}
           {[
             ["name", "Name"],
             ["address", "Address"],
@@ -79,11 +85,12 @@ export default function AddLocationForm() {
               value={formData[key]}
               onChange={handleChange}
               placeholder={placeholder}
-              required={key !== "postalCode"}
+              required={key !== "postalCode"} // Postal code is optional
               className="w-full border border-gray-300 rounded-lg p-3 bg-[#f9fafb] focus:outline-none focus:ring-2 focus:ring-[#216a78]"
             />
           ))}
 
+          {/* Select input for location type */}
           <select
             name="type"
             value={formData.type}
@@ -97,6 +104,7 @@ export default function AddLocationForm() {
             <option value="public building">Public Building</option>
           </select>
 
+          {/* Accessibility info textarea */}
           <textarea
             name="accessibility"
             value={formData.accessibility}
@@ -106,6 +114,7 @@ export default function AddLocationForm() {
             rows={3}
           />
 
+          {/* Submit button */}
           <button
             type="submit"
             className="w-full bg-[#216a78] text-white py-3 rounded-lg hover:bg-[#1b5a66] transition font-semibold"
@@ -113,6 +122,7 @@ export default function AddLocationForm() {
             Submit
           </button>
 
+          {/* Feedback message */}
           {message && (
             <p className="text-center text-sm text-[#202254] mt-2">{message}</p>
           )}

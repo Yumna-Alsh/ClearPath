@@ -22,7 +22,6 @@ const About = () => {
         accessible. ClearPath aims to simplify this experience and build a
         community-driven resource for accessibility information.
       </p>
-
     </div>
   );
 };

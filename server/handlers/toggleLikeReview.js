@@ -1,9 +1,10 @@
 const { connectToDB } = require("../dbClient");
 
-async function unlikeReview(req, res) {
+async function toggleLikeReview(req, res) {
   const { id: reviewId } = req.params;
   const accessToken = req.cookies.auth;
 
+  // Require login
   if (!accessToken) {
     return res.status(401).json({ error: "Unauthorized" });
   }
@@ -16,32 +17,45 @@ async function unlikeReview(req, res) {
       return res.status(401).json({ error: "Invalid token" });
     }
 
+    // Locate the review
     const review = await db.collection("reviews").findOne({ _id: reviewId });
     if (!review) {
       return res.status(404).json({ error: "Review not found" });
     }
 
-    if (!review.likedBy || !review.likedBy.includes(user.username)) {
-      return res.status(400).json({ error: "You have not liked this review" });
+    const username = user.username;
+    const hasLiked = review.likedBy && review.likedBy.includes(username);
+
+    // Toggle like count and likedBy array
+    if (hasLiked) {
+      await db.collection("reviews").updateOne(
+        { _id: reviewId },
+        {
+          $inc: { likes: -1 },
+          $pull: { likedBy: username },
+        }
+      );
+    } else {
+      await db.collection("reviews").updateOne(
+        { _id: reviewId },
+        {
+          $inc: { likes: 1 },
+          $push: { likedBy: username },
+        }
+      );
     }
 
-    await db.collection("reviews").updateOne(
-      { _id: reviewId },
-      {
-        $inc: { likes: -1 },
-        $pull: { likedBy: user.username },
-      }
-    );
-
     const updated = await db.collection("reviews").findOne({ _id: reviewId });
+
     res.json({
       likes: updated.likes || 0,
       likedBy: updated.likedBy || [],
+      liked: !hasLiked,
     });
   } catch (error) {
-    console.error("Error unliking review:", error);
+    console.error("Error toggling like:", error);
     res.status(500).json({ error: "Server error" });
   }
 }
 
-module.exports = unlikeReview;
+module.exports = toggleLikeReview;

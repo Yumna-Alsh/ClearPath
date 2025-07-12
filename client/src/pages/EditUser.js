@@ -3,76 +3,109 @@ import { useNavigate } from "react-router-dom";
 import { LoggedInUserContext } from "../contexts/LoggedInUserContext";
 
 const EditUser = () => {
+  // Access current user data and logIn function from context
   const { user, logIn } = useContext(LoggedInUserContext);
   const navigate = useNavigate();
 
+  // Initialize form fields from current user info or default empty strings
   const initialState = {
     firstName: user?.firstName || "",
     lastName: user?.lastName || "",
     username: user?.username || "",
     about: user?.about || "",
-    profilePic: null,
+    profilePic: user?.profilePic || "",
   };
 
+  // State variables for form inputs and submission status/message
   const [firstName, setFirstName] = useState(initialState.firstName);
   const [lastName, setLastName] = useState(initialState.lastName);
   const [username, setUsername] = useState(initialState.username);
   const [about, setAbout] = useState(initialState.about);
-  const [profilePreview, setProfilePreview] = useState(null);
+  const [profilePic, setProfilePic] = useState(initialState.profilePic);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState("");
 
+  // Ref to access the hidden file input for profile picture
   const fileInputRef = useRef();
 
-  const handleEdit = async () => {
-    setMessage("");
-
-    try {
-      const res = await fetch("/edit-user", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: user._id,
-          firstName,
-          lastName,
-          username,
-          about,
-        }),
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        logIn({
-          ...user,
-          firstName,
-          lastName,
-          username,
-        });
-
-        setMessage("User info updated successfully.");
-        setTimeout(() => navigate("/profile"), 1500);
-      } else {
-        setMessage(data.message || "Update failed.");
-      }
-    } catch (error) {
-      console.error(error);
-      setMessage("An error occurred.");
+  // Handles previewing the selected profile picture as a base64 string for immediate UI feedback
+  const handleProfilePicChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfilePic(reader.result); // base64 preview
+      };
+      reader.readAsDataURL(file);
     }
   };
 
+  // Handles the form submission for editing the user profile
+  const handleEdit = async () => {
+    setMessage("");
+    setIsSubmitting(true);
+
+    // Basic validation for required fields
+    if (!firstName.trim() || !username.trim()) {
+      setMessage("First name and username are required");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (username.length < 3) {
+      setMessage("Username must be at least 3 characters");
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      // Prepare form data to send including the actual profile picture file (if any)
+      const formData = new FormData();
+      formData.append("firstName", firstName.trim());
+      formData.append("lastName", lastName?.trim() || "");
+      formData.append("username", username.trim());
+      formData.append("about", about?.trim() || "");
+
+      if (fileInputRef.current.files[0]) {
+        formData.append("profilePic", fileInputRef.current.files[0]);
+      }
+
+      // Send PATCH request to update user profile, including credentials for authentication
+      const res = await fetch("/edit-user", {
+        method: "PATCH",
+        credentials: "include",
+        body: formData,
+        // Content-Type is omitted to let browser set multipart/form-data boundary
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Update failed");
+      }
+
+      // Update user context with new data and display success message
+      const data = await res.json();
+      logIn({ ...user, ...data.user });
+      setMessage("Profile updated successfully");
+
+      // Redirect to profile page after short delay
+      setTimeout(() => navigate("/profile"), 1500);
+    } catch (error) {
+      setMessage(error.message || "Update failed. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Resets the form inputs and preview to their initial values
   const handleReset = () => {
     setFirstName(initialState.firstName);
     setLastName(initialState.lastName);
     setUsername(initialState.username);
     setAbout(initialState.about);
-    setProfilePreview(null);
+    setProfilePic(initialState.profilePic);
+    fileInputRef.current.value = null; // Clear file input value
     setMessage("");
-  };
-
-  const handleProfilePicChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setProfilePreview(URL.createObjectURL(file));
-    }
   };
 
   return (
@@ -82,11 +115,11 @@ const EditUser = () => {
           Edit Profile
         </h2>
 
-        {/* Avatar */}
+        {/* Profile picture preview and file input trigger */}
         <div className="flex items-center mb-8 space-x-4">
-          {profilePreview ? (
+          {profilePic ? (
             <img
-              src={profilePreview}
+              src={profilePic}
               alt="Profile"
               className="w-14 h-14 rounded-full object-cover border-2 border-[#216a78]"
             />
@@ -110,7 +143,7 @@ const EditUser = () => {
           />
         </div>
 
-        {/* Inputs */}
+        {/* Form fields for user information */}
         <div className="grid grid-cols-2 gap-6 mb-6">
           <div>
             <label className="block mb-1 font-semibold">First name</label>
@@ -152,6 +185,7 @@ const EditUser = () => {
           />
         </div>
 
+        {/* Display success or error message */}
         {message && (
           <p
             className={`mb-4 text-sm ${
@@ -162,6 +196,7 @@ const EditUser = () => {
           </p>
         )}
 
+        {/* Reset and Save buttons */}
         <div className="flex justify-end space-x-4">
           <button
             type="button"
@@ -171,11 +206,13 @@ const EditUser = () => {
             Reset
           </button>
           <button
-            type="button"
             onClick={handleEdit}
-            className="bg-[#216a78] text-white px-6 py-2 rounded-md text-lg font-semibold hover:bg-[#1e595e] transition"
+            disabled={isSubmitting}
+            className={`bg-[#216a78] text-white px-6 py-2 rounded-md text-lg font-semibold hover:bg-[#1e595e] transition ${
+              isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+            }`}
           >
-            Save
+            {isSubmitting ? "Saving..." : "Save"}
           </button>
         </div>
       </div>

@@ -1,49 +1,48 @@
 import React, { useState } from "react";
-import { FaHeart, FaStar, FaEllipsisV } from "react-icons/fa";
-import ReplyItem from "./ReplyItem.js";
+import { FaHeart, FaEllipsisV, FaReply, FaWheelchair } from "react-icons/fa";
+import ReplyItem from "./ReplyItem";
 
+/**
+ * ReviewItem displays a single review, its replies, and allows users to interact
+ * via liking, editing, replying, and deleting both the review and its replies.
+ */
 export default function ReviewItem({
   review,
   user,
   showSignInMessageFor,
   setShowSignInMessageFor,
-  setReviews,
+  onReviewUpdate,
+  onReviewDelete,
+  onReplyAdded,
+  onReplyUpdated,
+  onReplyDelete,
 }) {
-  const [replyingTo, setReplyingTo] = useState(false);
-  const [replyText, setReplyText] = useState("");
-  const [editingReview, setEditingReview] = useState(false);
-  const [editingText, setEditingText] = useState(review.comment);
-  const [showMenu, setShowMenu] = useState(false);
+  // Local state management
+  const [replyingTo, setReplyingTo] = useState(false); 
+  const [replyText, setReplyText] = useState(""); 
+  const [editingReview, setEditingReview] = useState(false); 
+  const [editingText, setEditingText] = useState(review.comment); 
+  const [showMenu, setShowMenu] = useState(false); 
 
+  // Toggle like on the review
   const handleLike = async () => {
-    if (!user) return;
-    const hasLiked = review.likedBy.includes(user.username);
-
     try {
-      const endpoint = hasLiked
-        ? `/reviews/${review._id}/unlike`
-        : `/reviews/${review._id}/like`;
-
-      const res = await fetch(endpoint, {
+      const res = await fetch(`/reviews/${review._id}/toggle-like`, {
         method: "POST",
         credentials: "include",
       });
-
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-
-      setReviews((prev) =>
-        prev.map((r) =>
-          r._id === review._id
-            ? { ...r, likes: data.likes, likedBy: data.likedBy }
-            : r
-        )
-      );
+      onReviewUpdate({
+        ...review,
+        likes: data.likes,
+        likedBy: data.likedBy,
+      });
     } catch (err) {
-      console.error("Error liking review:", err);
+      console.error("Error toggling like:", err);
     }
   };
 
+  // Submit reply to a review
   const handleReplySubmit = async () => {
     if (!replyText.trim()) return;
 
@@ -55,17 +54,10 @@ export default function ReviewItem({
         body: JSON.stringify({ text: replyText }),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      const updatedReview = await res.json();
+      if (!res.ok) throw new Error(updatedReview.error);
 
-      setReviews((prev) =>
-        prev.map((r) =>
-          r._id === review._id
-            ? { ...r, replies: [...(r.replies || []), data] }
-            : r
-        )
-      );
-
+      onReplyAdded(updatedReview); // Notify parent
       setReplyText("");
       setReplyingTo(false);
     } catch (err) {
@@ -73,6 +65,7 @@ export default function ReviewItem({
     }
   };
 
+  // Submit edited review comment
   const handleEditReview = async () => {
     if (!editingText.trim()) return;
 
@@ -87,33 +80,27 @@ export default function ReviewItem({
       const updated = await res.json();
       if (!res.ok) throw new Error(updated.error);
 
-      setReviews((prev) =>
-        prev.map((r) => (r._id === review._id ? updated : r))
-      );
+      onReviewUpdate(updated);
       setEditingReview(false);
     } catch (err) {
       console.error("Edit error:", err);
     }
   };
 
+  // Delete the review
   const handleDelete = async () => {
-    if (!window.confirm("Are you sure you want to delete this review?")) return;
-
     try {
-      const res = await fetch(`/reviews/${review._id}`, {
+      await fetch(`/reviews/${review._id}`, {
         method: "DELETE",
         credentials: "include",
       });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-
-      setReviews((prev) => prev.filter((r) => r._id !== review._id));
+      onReviewDelete(review._id);
     } catch (err) {
       console.error("Delete error:", err);
     }
   };
 
+  // Edit a reply to the review
   const handleEditReply = async (replyId, newText, replyIndex) => {
     try {
       const res = await fetch(`/reviews/${review._id}/replies/${replyId}`, {
@@ -126,24 +113,18 @@ export default function ReviewItem({
       const updatedReply = await res.json();
       if (!res.ok) throw new Error(updatedReply.error);
 
-      setReviews((prev) =>
-        prev.map((r) => {
-          if (r._id !== review._id) return r;
-
-          const updatedReplies = [...(r.replies || [])];
-          updatedReplies[replyIndex] = {
-            ...updatedReplies[replyIndex],
-            ...updatedReply, 
-          };
-
-          return { ...r, replies: updatedReplies };
-        })
-      );
+      onReplyUpdated({
+        reviewId: review._id,
+        replyId,
+        updatedReply,
+        replyIndex,
+      });
     } catch (err) {
       console.error("Edit reply error:", err);
     }
   };
 
+  // Delete a reply after confirmation
   const handleDeleteReply = async (replyId, replyIndex) => {
     if (!window.confirm("Are you sure you want to delete this reply?")) return;
 
@@ -156,23 +137,65 @@ export default function ReviewItem({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
-      setReviews((prev) =>
-        prev.map((r) => {
-          if (r._id === review._id) {
-            const updatedReplies = [...(r.replies || [])];
-            updatedReplies.splice(replyIndex, 1);
-            return { ...r, replies: updatedReplies };
-          }
-          return r;
-        })
-      );
+      onReplyDelete({
+        reviewId: review._id,
+        replyId,
+        replyIndex,
+      });
     } catch (err) {
       console.error("Delete reply error:", err);
     }
   };
 
+  // Toggle like on a reply
+  const handleToggleLikeReply = async (replyId, replyIndex) => {
+    try {
+      const res = await fetch(
+        `/reviews/${review._id}/replies/${replyId}/like`,
+        {
+          method: "POST",
+          credentials: "include",
+        }
+      );
+
+      const updatedReply = await res.json();
+      if (!res.ok) throw new Error(updatedReply.error);
+
+      onReplyUpdated({
+        reviewId: review._id,
+        replyId,
+        updatedReply,
+        replyIndex,
+      });
+    } catch (err) {
+      console.error("Error toggling reply like:", err);
+    }
+  };
+
+  // Reply to a reply (nested)
+  const handleReplyToReply = async (parentReplyId, text) => {
+    if (!text.trim()) return;
+
+    try {
+      const res = await fetch(`/reviews/${review._id}/replies`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ text, parentReplyId }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      onReplyAdded(data);
+    } catch (err) {
+      console.error("Reply to reply error:", err);
+    }
+  };
+
   return (
     <div className="border p-4 rounded-lg shadow-sm space-y-2 bg-white relative">
+      {/* Review header: username, date, and rating */}
       <div className="flex justify-between">
         <div>
           <p className="font-semibold">{review.user}</p>
@@ -181,10 +204,25 @@ export default function ReviewItem({
           </p>
         </div>
 
+        {/* Accessibility rating display using wheelchair icons */}
+        <div className="flex items-center gap-1">
+          {[1, 2, 3, 4, 5].map((wheelchair) => (
+            <FaWheelchair
+              key={wheelchair}
+              className={`h-5 w-5 ${
+                wheelchair <= review.accessibilityRating
+                  ? "text-blue-600"
+                  : "text-gray-300"
+              }`}
+            />
+          ))}
+        </div>
+
+        {/* Review action menu (visible to review author) */}
         {user?.username === review.user && (
           <div className="relative">
             <button
-              onClick={() => setShowMenu((prev) => !prev)}
+              onClick={() => setShowMenu(!showMenu)}
               className="p-2 text-gray-600 hover:text-black"
             >
               <FaEllipsisV />
@@ -193,20 +231,20 @@ export default function ReviewItem({
             {showMenu && (
               <div className="absolute right-0 mt-2 w-28 bg-white border border-gray-200 rounded-lg shadow-md z-10">
                 <button
-                  className="w-full px-3 py-2 text-sm text-left hover:bg-gray-100"
                   onClick={() => {
                     setEditingReview(true);
                     setShowMenu(false);
                   }}
+                  className="w-full px-3 py-2 text-sm text-left hover:bg-gray-100"
                 >
                   Edit
                 </button>
                 <button
-                  className="w-full px-3 py-2 text-sm text-left hover:bg-gray-100 text-red-600"
                   onClick={() => {
                     handleDelete();
                     setShowMenu(false);
                   }}
+                  className="w-full px-3 py-2 text-sm text-left hover:bg-gray-100 text-red-600"
                 >
                   Delete
                 </button>
@@ -216,6 +254,7 @@ export default function ReviewItem({
         )}
       </div>
 
+      {/* Editable or static comment text */}
       {editingReview ? (
         <>
           <textarea
@@ -245,14 +284,7 @@ export default function ReviewItem({
         <p>{review.comment}</p>
       )}
 
-      {review.accessibilityRating > 0 && (
-        <div className="flex items-center text-yellow-500">
-          {Array.from({ length: review.accessibilityRating }).map((_, i) => (
-            <FaStar key={i} />
-          ))}
-        </div>
-      )}
-
+      {/* Review interaction buttons (like and reply) */}
       <div className="flex gap-4 text-sm">
         <button
           onClick={handleLike}
@@ -266,24 +298,26 @@ export default function ReviewItem({
           <span>{review.likes}</span>
         </button>
         <button
-          className="text-blue-500 hover:underline"
+          className="p-1 rounded hover:bg-gray-100 text-gray-600 hover:text-blue-600"
           onClick={() => {
             if (!user) {
               setShowSignInMessageFor(review._id);
               setTimeout(() => setShowSignInMessageFor(null), 3000);
             } else {
-              setReplyingTo((prev) => !prev);
+              setReplyingTo(!replyingTo);
             }
           }}
         >
-          Reply
+          <FaReply />
         </button>
       </div>
 
+      {/* Sign-in message if unauthenticated user tries to reply */}
       {showSignInMessageFor === review._id && (
         <p className="text-red-600 text-sm">Please sign in to comment.</p>
       )}
 
+      {/* Reply input section */}
       {replyingTo && (
         <div className="mt-2 space-y-2">
           <textarea
@@ -294,12 +328,14 @@ export default function ReviewItem({
           />
           <button
             onClick={handleReplySubmit}
-            className="bg-blue-600 text-white px-4 py-1.5 rounded hover:bg-blue-700"
+            className="bg-[#216a78] text-white px-5 py-2 rounded-md hover:bg-[#1b5a65]"
           >
             Post Reply
           </button>
         </div>
       )}
+
+      {/* Render replies */}
       {review.replies?.map((reply, i) => (
         <ReplyItem
           key={reply._id || i}
@@ -309,6 +345,8 @@ export default function ReviewItem({
           index={i}
           onEdit={handleEditReply}
           onDelete={handleDeleteReply}
+          onToggleLike={handleToggleLikeReply}
+          onReply={handleReplyToReply}
         />
       ))}
     </div>

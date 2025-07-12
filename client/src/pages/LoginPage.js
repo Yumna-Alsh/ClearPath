@@ -4,14 +4,17 @@ import { LoggedInUserContext } from "../contexts/LoggedInUserContext";
 import SignupImage from "../assets/signup-image.png";
 
 const LoginPage = () => {
+  // Local state for form inputs and UI feedback
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isFetching, setIsFetching] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState(null);
+
   const navigate = useNavigate();
   const { logIn } = useContext(LoggedInUserContext);
 
+  // Handles form submission for user login
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsFetching(true);
@@ -29,14 +32,14 @@ const LoginPage = () => {
       const data = await res.json();
 
       if (data.message === "Login successful") {
-        logIn(data.data);
+        logIn(data.data); // Update user context on success
         setMessage("Login successful!");
-        navigate("/");
+        navigate("/"); 
       } else {
-        setMessage(data.message);
+        setMessage(data.message); 
       }
     } catch (err) {
-      setMessage("Error during login. Please try again.");
+      setMessage("Error during login. Please try again."); 
     } finally {
       setIsFetching(false);
     }
@@ -44,12 +47,14 @@ const LoginPage = () => {
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen">
+      {/* Left side image for larger screens */}
       <div
         className="hidden md:block md:w-1/2 bg-cover bg-center"
         style={{ backgroundImage: `url(${SignupImage})` }}
       ></div>
 
       <div className="relative w-full md:w-1/2 flex items-center justify-center bg-white">
+        {/* Mobile background image */}
         <div
           className="absolute inset-0 block md:hidden bg-cover bg-center"
           style={{ backgroundImage: `url(${SignupImage})` }}
@@ -57,6 +62,7 @@ const LoginPage = () => {
 
         <div className="absolute inset-0 md:hidden bg-white bg-opacity-70 backdrop-blur-sm z-0"></div>
 
+        {/* Form container */}
         <div className="relative z-10 w-full max-w-md p-8 rounded-2xl shadow-xl bg-white bg-opacity-50 backdrop-blur-md mx-4 my-8">
           <h2
             className="text-3xl font-bold mb-6 text-[#216a78] text-center"
@@ -65,6 +71,7 @@ const LoginPage = () => {
             Sign In
           </h2>
 
+          {/* Login form */}
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <input
               type="email"
@@ -100,6 +107,7 @@ const LoginPage = () => {
             </button>
           </form>
 
+          {/* Show messages */}
           {message && (
             <p className="mt-4 text-center text-green-600 font-medium">
               {message}
@@ -109,6 +117,7 @@ const LoginPage = () => {
             <p className="mt-4 text-center text-red-600 font-medium">{error}</p>
           )}
 
+          {/* Link to signup page */}
           <p className="mt-6 text-center text-gray-600">
             Don’t have an account?{" "}
             <Link

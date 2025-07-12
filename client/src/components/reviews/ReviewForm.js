@@ -1,64 +1,99 @@
 import React, { useState } from "react";
-import { FaStar } from "react-icons/fa";
+import { FaWheelchair } from "react-icons/fa";
 
-export default function ReviewForm({ locationId, setReviews }) {
-  const [newReviewText, setNewReviewText] = useState("");
-  const [accessibilityRating, setAccessibilityRating] = useState(0);
+/**
+ * ReviewForm component allows users to submit a review with a rating and comment.
+ * Uses wheelchair icons as a visual metaphor for accessibility rating.
+ */
+export default function ReviewForm({ locationId, onSubmit }) {
+  const [comment, setComment] = useState(""); 
+  const [rating, setRating] = useState(0); 
+  const [hover, setHover] = useState(0); 
+  const [isSubmitting, setIsSubmitting] = useState(false); 
 
-  const handleSubmit = async () => {
-    if (!newReviewText.trim()) return;
+  // Handle form submission
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
 
     try {
       const res = await fetch(`/locations/${locationId}/reviews`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
+        credentials: "include", 
         body: JSON.stringify({
-          comment: newReviewText,
-          accessibilityRating,
-          locationId,
+          comment,
+          accessibilityRating: rating,
         }),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to add review");
-
-      setReviews((prev) => [...prev, data.review || data]);
-      setNewReviewText("");
-      setAccessibilityRating(0);
+      const newReview = await res.json();
+      onSubmit(newReview); // Notify parent component with new review
+      setComment(""); // Reset comment input
+      setRating(0); // Reset rating
     } catch (err) {
-      console.error("Submit review failed:", err);
+      console.error("Review submission error:", err); // Log submission error
+    } finally {
+      setIsSubmitting(false); // Reset submission state
     }
   };
 
   return (
-    <div className="mb-4 space-y-2">
-      <textarea
-        className="w-full border border-gray-300 rounded-lg p-3 text-sm"
-        placeholder="Write your review..."
-        value={newReviewText}
-        onChange={(e) => setNewReviewText(e.target.value)}
-      />
-      <div className="flex items-center gap-2">
-        {[1, 2, 3, 4, 5].map((num) => (
+    <form onSubmit={handleSubmit} className="space-y-3">
+      {/* Rating selection using wheelchair icons */}
+      <div className="flex items-center gap-1">
+        {[1, 2, 3, 4, 5].map((wheelchair) => (
           <button
-            key={num}
-            onClick={() => setAccessibilityRating(num)}
-            className={
-              num <= accessibilityRating ? "text-yellow-500" : "text-gray-300"
-            }
+            type="button"
+            key={wheelchair}
+            onClick={() => setRating(wheelchair)} // Set selected rating
+            onMouseEnter={() => setHover(wheelchair)} // Highlight on hover
+            onMouseLeave={() => setHover(0)} // Clear hover on leave
+            className="text-2xl"
           >
-            <FaStar />
+            <FaWheelchair
+              className={`
+                ${
+                  wheelchair <= (hover || rating)
+                    ? "text-blue-600" // Highlighted icon
+                    : "text-gray-300" // Default icon
+                }
+                transition-colors
+              `}
+            />
           </button>
         ))}
-        <span className="text-xs text-gray-600 ml-2">Accessibility Rating</span>
+        <span className="ml-2 text-sm text-gray-600">
+          {rating > 0 ? `${rating}/5` : "Rate accessibility"}
+        </span>
       </div>
+
+      {/* Comment input field */}
+      <textarea
+        value={comment}
+        onChange={(e) => setComment(e.target.value)} // Update comment state
+        placeholder="Write your review..."
+        className="w-full border rounded p-2"
+        required // Ensure input is not empty
+      />
+
+      {/* Submit button with loading and validation states */}
       <button
-        onClick={handleSubmit}
-        className="bg-[#216a78] text-white px-5 py-2 rounded-md hover:bg-[#1b5a65]"
+        type="submit"
+        disabled={!comment.trim() || rating === 0 || isSubmitting} // Disable if incomplete or submitting
+        className={`
+          bg-[#216a78] text-white px-4 py-2 rounded
+          hover:bg-[#1b5a65]
+          ${
+            !comment.trim() || rating === 0
+              ? "opacity-50 cursor-not-allowed" // Visual cue for disabled state
+              : ""
+          }
+          ${isSubmitting ? "animate-pulse" : ""} // Loading animation
+        `}
       >
-        Post Review
+        {isSubmitting ? "Submitting..." : "Submit Review"}
       </button>
-    </div>
+    </form>
   );
 }
